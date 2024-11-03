@@ -1,0 +1,40 @@
+.profile-container {
+    padding: 20px;
+}
+
+.recipe-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px; /* Adds space between cards */
+}
+
+.recipe-card {
+    background-color: #f9f9f9;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    flex: 1 1 calc(33% - 30px); /* Responsive width */
+    text-align: center;
+    min-width: 200px; /* Minimum width */
+}
+
+input[type="text"], textarea {
+    width: 100%; /* Full width */
+    padding: 10px;
+    margin: 5px 0; /* Space between elements */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}

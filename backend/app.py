@@ -1,56 +1,20 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import mysql.connector
+from mysql.connector import Error
 
 app = Flask(__name__)
 CORS(app)  # Allow CORS for all routes
 
-# MySQL database connection
-db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="root",
-    database="receipeblog"
-)
+# MySQL database connection function
+def get_db_connection():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="root",
+        database="receipeblog"
+    )
 
-cursor = db.cursor()
-
-# User Signup
-@app.route('/signup', methods=['POST'])
-def signup():
-    data = request.json
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')  # Get password directly from the user
-
-    try:
-        cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", (username, email, password))
-        db.commit()
-        return jsonify({"message": "User created successfully!"}), 201
-    except mysql.connector.Error as err:
-        return jsonify({"message": "Error: {}".format(err)}), 500
-
-# User Login
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-
-    # Check if username and password match
-    if username == password:
-        # Optional: Query the database to ensure the username exists
-        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
-        user = cursor.fetchone()
-
-        if user:
-            return jsonify({"message": "Login successful!", "user_id": user[0]}), 200
-        else:
-            return jsonify({"message": "User does not exist!"}), 404
-    else:
-        return jsonify({"message": "Invalid credentials!"}), 401
-    
-    
 # Add New Recipe
 @app.route('/recipes', methods=['POST'])
 def add_recipe():
@@ -60,73 +24,177 @@ def add_recipe():
     category_id = data.get('category_id')
     user_id = data.get('user_id')
 
-    cursor.execute("INSERT INTO recipes (title, description, category_id, user_id) VALUES (%s, %s, %s, %s)", 
-                   (title, description, category_id, user_id))
-    db.commit()
-    recipe_id = cursor.lastrowid
+    if not title or not description or not category_id or not user_id:
+        return jsonify({"message": "All fields are required!"}), 400
 
-    return jsonify({"message": "Recipe created successfully!", "recipe_id": recipe_id}), 201
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO recipes (title, description, category_id, user_id, likes) VALUES (%s, %s, %s, %s, %s)", 
+            (title, description, category_id, user_id, 0)  # Initialize likes to 0
+        )
+        db.commit()
+        recipe_id = cursor.lastrowid
+        return jsonify({"message": "Recipe created successfully!", "recipe_id": recipe_id}), 201
+    except Error as err:
+        return jsonify({"message": f"Error: {err}"}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
 
-# Get Recipes
-@app.route('/recipes', methods=['GET'])
-def get_recipes():
-    cursor.execute("SELECT * FROM recipes")
-    recipes = cursor.fetchall()
-    
-    recipe_list = []
-    for recipe in recipes:
-        recipe_list.append({
-            "recipe_id": recipe[0],
-            "title": recipe[1],
-            "description": recipe[2],
-            "category_id": recipe[3],
-            "user_id": recipe[4]
-        })
+# Get Top Liked Recipes
+@app.route('/top-recipes', methods=['GET'])
+def get_top_recipes():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM recipes WHERE likes >= 150 ORDER BY likes DESC LIMIT 10")
+        recipes = cursor.fetchall()
+        
+        recipe_list = []
+        for recipe in recipes:
+            recipe_list.append({
+                "recipe_id": recipe[0],
+                "title": recipe[1],
+                "description": recipe[2],
+                "category_id": recipe[3],
+                "user_id": recipe[4],
+                "likes": recipe[5],
+                "created_at": recipe[6]
+            })
 
-    return jsonify(recipe_list), 200
+        return jsonify(recipe_list), 200
+    except Error as err:
+        return jsonify({"message": f"Error: {err}"}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
 
-# Add Ingredient to Recipe
-@app.route('/recipes/<int:recipe_id>/ingredients', methods=['POST'])
-def add_ingredient(recipe_id):
+# User Signup
+@app.route('/signup', methods=['POST'])
+def signup():
     data = request.json
-    ingredient_name = data.get('name')
-    quantity = data.get('quantity')
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')  # Get password directly from the user
 
-    cursor.execute("INSERT INTO ingredients (recipe_id, name, quantity) VALUES (%s, %s, %s)", 
-                   (recipe_id, ingredient_name, quantity))
-    db.commit()
+    if not username or not email or not password:
+        return jsonify({"message": "All fields are required!"}), 400
 
-    return jsonify({"message": "Ingredient added successfully!"}), 201
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        # Insert password without hashing
+        cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", (username, email, password))
+        db.commit()
+        return jsonify({"message": "User created successfully!"}), 201
+    except mysql.connector.Error as err:
+        return jsonify({"message": f"Error: {err}"}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
 
-# Add Comment to Recipe
-@app.route('/recipes/<int:recipe_id>/comments', methods=['POST'])
-def add_comment(recipe_id):
+@app.route('/login', methods=['POST'])
+def login():
     data = request.json
-    user_id = data.get('user_id')
-    comment_text = data.get('text')
+    username = data.get('username')
+    password = data.get('password')
 
-    cursor.execute("INSERT INTO comments (recipe_id, user_id, text) VALUES (%s, %s, %s)", 
-                   (recipe_id, user_id, comment_text))
-    db.commit()
+    if not username or not password:
+        return jsonify({"message": "Both username and password are required!"}), 400
 
-    return jsonify({"message": "Comment added successfully!"}), 201
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        # Select username and password from the database
+        cursor.execute("SELECT id, password FROM users WHERE username = %s", (username,))
+        user = cursor.fetchone()  # Fetch user data
 
-# Get Comments for Recipe
-@app.route('/recipes/<int:recipe_id>/comments', methods=['GET'])
-def get_comments(recipe_id):
-    cursor.execute("SELECT * FROM comments WHERE recipe_id = %s", (recipe_id,))
-    comments = cursor.fetchall()
-    
-    comment_list = []
-    for comment in comments:
-        comment_list.append({
-            "comment_id": comment[0],
-            "recipe_id": comment[1],
-            "user_id": comment[2],
-            "text": comment[3]
-        })
+        if user:  # Check if user exists
+            user_id, stored_password = user  # Unpack user ID and stored password
+            
+            if stored_password == password:  # Compare plaintext password directly
+                return jsonify({"message": "Login successful!", "user_id": user_id}), 200
+            else:
+                return jsonify({"message": "Invalid credentials!"}), 401
+        else:
+            return jsonify({"message": "User does not exist!"}), 404
+            
+    except mysql.connector.Error as err:
+        return jsonify({"message": f"Error: {err}"}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
 
-    return jsonify(comment_list), 200
+# New Endpoint: Get User Recipes
+@app.route('/get-recipes/<int:user_id>', methods=['GET'])
+def get_user_recipes(user_id):
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM recipes WHERE user_id = %s", (user_id,))
+        recipes = cursor.fetchall()
+        
+        recipe_list = []
+        for recipe in recipes:
+            recipe_list.append({
+                "recipe_id": recipe[0],
+                "title": recipe[1],
+                "description": recipe[2],
+                "category_id": recipe[3],
+                "user_id": recipe[4],
+                "likes": recipe[5],
+                "created_at": recipe[6]
+            })
+
+        return jsonify(recipe_list), 200
+    except Error as err:
+        return jsonify({"message": f"Error: {err}"}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
+
+# New Endpoint: Search Recipes
+@app.route('/search-recipes', methods=['GET'])
+def search_recipes():
+    query = request.args.get('q')
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM recipes WHERE title LIKE %s", ('%' + query + '%',))
+        recipes = cursor.fetchall()
+        
+        recipe_list = []
+        for recipe in recipes:
+            recipe_list.append({
+                "recipe_id": recipe[0],
+                "title": recipe[1],
+                "description": recipe[2],
+                "category_id": recipe[3],
+                "user_id": recipe[4],
+                "likes": recipe[5],
+                "created_at": recipe[6]
+            })
+
+        return jsonify(recipe_list), 200
+    except Error as err:
+        return jsonify({"message": f"Error: {err}"}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
 
 # Main entry point
 if __name__ == '__main__':

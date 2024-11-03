@@ -1,0 +1,60 @@
+/* src/Home.css */
+.home-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.header {
+    background-image: url('./assets/background.jpg'); /* Ensure the image path is correct */
+    background-size: cover;
+    background-position: center; /* Center the image */
+    height: 470px; /* Increased height for the header */
+    padding: 40px;
+    position: relative; /* Make sure children can be positioned relative to the header */
+}
+
+.header-content {
+    /* Positioning over the header */
+    position: absolute; /* Use absolute positioning */
+    top: 40px; /* Adjust as necessary */
+    left: 20px; /* Adjust as necessary */
+    right: 20px; /* Adjust as necessary */
+}
+
+.search-bar {
+    padding: 10px;
+    width: 50%; /* Adjusted width to a percentage for responsiveness */
+    border-radius: 20px;
+    border: transparent;
+    background-color: rgba(255, 255, 255, 0.138); /* Transparent background */
+    color: black; /* Changed text color to black */
+    margin-left: 20px; /* Add margin to separate from profile button */
+}
+
+
+.recipe-list {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 20px;
+    top: 2%;
+}
+
+.recipe-card {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 15px;
+    padding: 15px;
+    width: 300px;
+    text-align: center;
+}
+
+.footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 10px;
+}
