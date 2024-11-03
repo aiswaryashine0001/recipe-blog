@@ -5,9 +5,9 @@
     align-items: center;
     height: 100vh;
     background: linear-gradient(to right, #f7f8fc, #eceef7);
-  }
+}
   
-  .form-container {
+.form-container {
     background: #ffffff;
     padding: 2rem;
     border-radius: 8px;
@@ -15,25 +15,26 @@
     width: 100%;
     max-width: 400px;
     text-align: center;
-  }
+}
   
-  h2 {
+h2 {
     font-family: 'Arial', sans-serif;
     color: #333;
     margin-bottom: 1rem;
-  }
+}
   
-  input[type="text"],
-  input[type="password"] {
+input[type="text"],
+input[type="password"],
+input[type="email"] {
     width: 100%;
     padding: 0.8rem;
     margin: 0.5rem 0;
     border: 1px solid #ccc;
     border-radius: 5px;
     font-size: 1rem;
-  }
+}
   
-  .submit-btn {
+.submit-btn {
     width: 100%;
     padding: 0.8rem;
     margin-top: 1rem;
@@ -44,19 +45,19 @@
     font-size: 1rem;
     cursor: pointer;
     transition: background-color 0.3s;
-  }
+}
   
-  .submit-btn:hover {
+.submit-btn:hover {
     background-color: #45a049; /* Darker green on hover */
-  }
+}
   
-  .message {
+.message {
     color: #f35840;
     font-size: 0.9rem;
     margin-top: 1rem;
-  }
+}
   
-  .switch-btn {
+.switch-btn {
     background: none;
     border: none;
     color: #4caf50;
@@ -65,9 +66,8 @@
     margin-top: 1rem;
     text-decoration: underline;
     transition: color 0.3s;
-  }
+}
   
-  .switch-btn:hover {
+.switch-btn:hover {
     color: #45a049; /* Darker green on hover */
-  }
-  
+}

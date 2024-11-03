@@ -21,11 +21,19 @@ const LoginSignup = () => {
         headers: { 'Content-Type': 'application/json' },
         body,
       });
+      
       const data = await response.json();
+      console.log("Response status:", response.status);
+      console.log("Response data:", data);
       setMessage(data.message);
 
-      if (!isSignup && response.ok) {
-        navigate('/image-upload');
+      if (response.ok) {
+        // Navigate to Home.js if login is successful
+        if (!isSignup) {
+          navigate('/home'); // Change '/home' to your actual home route
+        }
+      } else {
+        setMessage(data.message);
       }
     } catch (error) {
       console.error("Error:", error);

@@ -20,13 +20,15 @@ cursor = db.cursor()
 def signup():
     data = request.json
     username = data.get('username')
-    password = data.get('password')
-    
-    # Save user to MySQL
-    cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
-    db.commit()
-    
-    return jsonify({"message": "User created successfully!"}), 201
+    email = data.get('email')
+    password = data.get('password')  # Get password directly from the user
+
+    try:
+        cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", (username, email, password))
+        db.commit()
+        return jsonify({"message": "User created successfully!"}), 201
+    except mysql.connector.Error as err:
+        return jsonify({"message": "Error: {}".format(err)}), 500
 
 # User Login
 @app.route('/login', methods=['POST'])
@@ -34,16 +36,21 @@ def login():
     data = request.json
     username = data.get('username')
     password = data.get('password')
-    
-    # Check user credentials
-    cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
-    user = cursor.fetchone()
-    
-    if user:
-        return jsonify({"message": "Login successful!", "user_id": user[0]}), 200
+
+    # Check if username and password match
+    if username == password:
+        # Optional: Query the database to ensure the username exists
+        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+        user = cursor.fetchone()
+
+        if user:
+            return jsonify({"message": "Login successful!", "user_id": user[0]}), 200
+        else:
+            return jsonify({"message": "User does not exist!"}), 404
     else:
         return jsonify({"message": "Invalid credentials!"}), 401
-
+    
+    
 # Add New Recipe
 @app.route('/recipes', methods=['POST'])
 def add_recipe():
@@ -121,20 +128,6 @@ def get_comments(recipe_id):
 
     return jsonify(comment_list), 200
 
-# Get Categories
-@app.route('/categories', methods=['GET'])
-def get_categories():
-    cursor.execute("SELECT * FROM categories")
-    categories = cursor.fetchall()
-    
-    category_list = []
-    for category in categories:
-        category_list.append({
-            "category_id": category[0],
-            "name": category[1]
-        })
-
-    return jsonify(category_list), 200
-
+# Main entry point
 if __name__ == '__main__':
     app.run(debug=True)
